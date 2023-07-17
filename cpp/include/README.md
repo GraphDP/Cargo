@@ -1,8 +1,8 @@
 # Setup
 Please put the following files/directories under 'include/'.
 
-##StatsLib
+## StatsLib
 https://www.kthohr.com/statslib.html
 
-*stats.hpp
-*stats_incl/
+* stats.hpp
+* stats_incl/
