@@ -6,3 +6,8 @@ This is a source code of the following paper:
 * cpp/  C++ code
 * data/  four real-world graphs from SNAP
 * README.md  This file
+
+# Usage
+$ cd cpp/  
+$ g++ -o cargo cargo.cpp  
+$ ./cargo [dataset]
