@@ -264,6 +264,31 @@ void LocalProject (map<int,vector<int>> & pro_a_list, int parameter,int max_ID,m
     }
 }
 
+void RandomProject(map<int,vector<int>> & pro_a_list, int parameter,int max_ID,map<int,int> deg, string filename) {
+    int flag = 1;
+    for (const auto &pair: pro_a_list) {
+        int ID = pair.first;
+        if (pro_a_list[ID].size() < parameter) {
+            int num_add = parameter - pro_a_list[ID].size();
+            pro_a_list[ID].insert(pro_a_list[ID].end(), num_add, max_ID + flag);
+            flag++;
+        } else {
+            int num_delete = pro_a_list[ID].size() - parameter;
+            //map<int,int> deg_similarity;
+            vector< std::pair<int, double> > deg_similarity;
+            int deg_ID=deg[ID];
+
+            for(int j=0;j<num_delete;j++){
+                int random_ID=getRand(0, pro_a_list[ID].size()-1);
+                std::vector<int>::iterator pos;
+                pos = pro_a_list[ID].begin()+random_ID;
+                if (pos != pro_a_list[ID].end())
+                    pro_a_list[ID].erase(pos);
+            }
+        }
+    }
+}
+
 void Noisydegree(map<int,int> deg, double & d_max_prime, double eps){
     double max=0.0;
     for (const auto &pair: deg) {
