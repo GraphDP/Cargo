@@ -1,2 +1,2 @@
 # Crypto++
-* Download and Install from https://www.cryptopp.com/
+Download and Install from https://www.cryptopp.com/
