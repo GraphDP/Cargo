@@ -407,7 +407,7 @@ int main(int argc, char *argv[]) {
     int num_user;
     double l2loss=0.0; //l2 loss
     double re=0.0;    // relative error
-    int num_iter=1;
+    int num_iter=20;
     clock_t start,end;
 
     double epsilons[6]={0.5,1,1.5,2,2.5,3};
