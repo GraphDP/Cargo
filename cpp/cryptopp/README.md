@@ -1,1 +1,2 @@
-Install Crypto++ from https://www.cryptopp.com/
+# Crypto++
+* Download and Install from https://www.cryptopp.com/
