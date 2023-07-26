@@ -232,7 +232,7 @@ bool cmp(const pair<int, double> a, const pair<int, double> b) {
     return a.second>b.second;
 }
 
-void LocalProject (map<int,vector<int>> & pro_a_list, int parameter,int max_ID,map<int,int> deg, string filename){
+void LocalProject (map<int,vector<int>> & pro_a_list, int parameter,int max_ID,map<int,int> deg, string filename,map<int,int> noisy_deg){
     int flag = 1;
     for (const auto &pair: pro_a_list) {
         int ID = pair.first;
@@ -247,7 +247,7 @@ void LocalProject (map<int,vector<int>> & pro_a_list, int parameter,int max_ID,m
 
             for(int i=0;i<pro_a_list[ID].size();i++){
                 int neighbor_ID=pro_a_list[ID][i];
-                int deg_i=deg[neighbor_ID];
+                int deg_i=noisy_deg[neighbor_ID];
                 double score= abs(deg_ID-deg_i)/double(deg_ID);
                 deg_similarity.push_back(make_pair(neighbor_ID,score));
             }
@@ -289,12 +289,13 @@ void RandomProject(map<int,vector<int>> & pro_a_list, int parameter,int max_ID,m
     }
 }
 
-void Noisydegree(map<int,int> deg, double & d_max_prime, double eps){
+void Noisydegree(map<int,int> deg, double & d_max_prime, double eps,map<int,int>& noisy_deg){
     double max=0.0;
     for (const auto &pair: deg) {
-        double noisy_deg=pair.second+stats::rlaplace(0.0, 2.0/eps);
-        if(noisy_deg>max)
-            max=noisy_deg;
+        double temp_noisy_deg=pair.second+stats::rlaplace(0.0, 2.0/eps);
+        noisy_deg[pair.first]=temp_noisy_deg;
+        if(temp_noisy_deg>max)
+            max=temp_noisy_deg;
     }
     d_max_prime=max;
 }
@@ -424,6 +425,7 @@ int main(int argc, char *argv[]) {
         map<int,vector<int>> pro_a_list;
         map<int,int> pro_local_triangle;
         map<int,int> noisy_local_triangle;
+        map<int,int> noisy_deg;
 
         eps=epsilons[i];
         cout<<"-------------------"<<endl;
@@ -437,13 +439,13 @@ int main(int argc, char *argv[]) {
         for(int j=0;j<num_iter;j++){
 
             // noisy maximum degree
-            Noisydegree(deg, d_max_prime, eps_deg);
+            Noisydegree(deg, d_max_prime, eps_deg,noisy_deg);
             parameter=round(d_max_prime);
             cout<<"d_max_prime: "<<d_max_prime<<endl;
 
             // local projection
             pro_a_list.insert(a_list.begin(),a_list.end());
-            LocalProject(pro_a_list, parameter,max_ID,deg,filename); 
+            LocalProject(pro_a_list, parameter,max_ID,deg,filename,noisy_deg); 
 
             // local triangle counting
             pro_triangle=ProTriangle(pro_a_list,a_list,pro_local_triangle,filename, deg, d_max_prime);
