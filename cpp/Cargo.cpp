@@ -20,7 +20,6 @@
 
 using namespace std;
 using namespace CryptoPP;
-// Initialization of statslib
 
 stats::rand_engine_t engine(1776);
 
@@ -64,7 +63,7 @@ void ReadFile(string filename, map<int,int> & deg, vector<vector<int>>& graph, i
     string line;
     if (file.is_open())
     {
-        cout<<"success open"<<endl;
+        //cout<<"success open"<<endl;
         while (getline(file, line)) {
             if (line[0] == '#') {
                 continue;
@@ -125,7 +124,6 @@ int TrueTriangle(vector<vector<int>> graph,int num_user){
             }
         }
     }
-    cout<<endl;
     return sum;
 }
 
@@ -233,14 +231,11 @@ double gamma_noise(double eps, int num_user, double d_ma_prime){
     double k=1.0/num_user;
     double theta=d_ma_prime/eps;
     double lap_noise=0.0;
-
     std::random_device rd;
     std::mt19937 gen(rd());
-
-    double gamma_1 = stats::rgamma(k,theta,engine);
-    double gamma_2 = stats::rgamma(k,theta,engine);
+    double gamma_1 = stats::rgamma(k,theta);
+    double gamma_2 = stats::rgamma(k,theta);
     lap_noise=lap_noise+gamma_1-gamma_2;
-
     return lap_noise;
 }
 
@@ -261,7 +256,7 @@ double Noisy_Triangle(double T1, double T2, double eps, int num_user, double d_m
 void Noisydegree(map<int,int> deg, double & d_max_prime, double eps){
     double max=0.0;
     for (const auto &pair: deg) {
-        double noisy_deg=pair.second+stats::rlaplace(0.0, 2.0/eps);
+        double noisy_deg=pair.second+stats::rlaplace(0.0, 1.0/eps);
         if(noisy_deg>max)
             max=noisy_deg;
     }
@@ -309,92 +304,63 @@ int main(int argc, char *argv[]) {
     double re=0.0;    // relative error
     double l2loss_pro=0.0; //l2 loss
     double re_pro=0.0;    // relative error
-    int num_iter=30;
+    int num_iter=1;
     double T1,T2;
-    clock_t start, end;
-    vector<vector<int>> graph;
-
-    double epsilons[6]={0.5,1,1.5,2,2.5,3};
-    string filename="wiki-Vote.txt";
+    double time_secure;
+    clock_t start,end;
+    clock_t start1,end1;
+    
+    string filename = "input_graph.txt";
     cout << "******************" << endl;
     cout << "dataset: " << filename << endl;
     num_user = get_NodeNum(filename);
-    ReadFile(filename, deg, graph, d_max, num_user);
 
-    cout << "number of nodes: " << num_user << endl;
-    cout<<"true maximum degree: "<<d_max<<endl;
+    eps=3;  //privacy budget
+    cout << "-------------------" << endl;
+    cout << "epsilon: " << eps << endl;
+    alpha = 0.1;
+    eps_deg = alpha * eps;
+    eps_tri = (1 - alpha) * eps;
 
-    true_triangle = TrueTriangle(graph, num_user);
-    cout << "number of triangles: " << true_triangle << endl;
-
-    for (int i = 0; i < 6; i++) {
+    double sum_time = 0.0;
+    double sum_noisy_triangle = 0.0;
+    start = clock();
+    for (int j = 0; j < num_iter; j++) {
+        vector<vector<int>> graph;
+        ReadFile(filename, deg, graph, d_max, num_user);
+        true_triangle = TrueTriangle(graph, num_user);
+        //printG(a_list,num_user);
         map<int, set<int>> pro_a_list;
         map<int, int> pro_local_triangle;
         map<int, int> noisy_local_triangle;
 
-        eps = epsilons[i];
-        cout << "-------------------" << endl;
-        cout << "epsilon: " << eps << endl;
-        alpha = 0.1;
-        eps_deg = alpha * eps;
-        eps_tri = (1 - alpha) * eps;
-        double temp_time;
-        double sum_d_max_prime = 0;
-
-        double sum_time = 0.0;
-        double sum_noisy_triangle = 0.0;
-        start = clock();
-        for (int j = 0; j < num_iter; j++) {
-            Noisydegree(deg, d_max_prime, eps_deg);
-            sum_d_max_prime = sum_d_max_prime + d_max_prime;
-        }
-        end = clock();
-        sum_time += double(end - start) / CLOCKS_PER_SEC;
-
-        start = clock();
-        d_max_prime = round(sum_d_max_prime / num_iter);
-        //pro_a_list.insert(a_list.begin(),a_list.end());
+        Noisydegree(deg, d_max_prime, eps_deg);
         parameter = d_max_prime;
-        cout << "d_max_prime: " << d_max_prime << endl;
+        //cout << "d_max_prime: " << d_max_prime << endl;
         Local_Project(graph, parameter, deg, num_user);
-        pro_triangle = TrueTriangle(graph, num_user);
-        cout << "pro_triangle: " << pro_triangle << endl;
-
-        l2loss_pro = Compute_l2loss(true_triangle, pro_triangle);
-        re_pro = Compute_RE(true_triangle, pro_triangle);
-        cout << "l2loss of projection: " << re_pro << " " << " re of projection: " << re << endl;
-        end = clock();
-        temp_time = double(end - start) / CLOCKS_PER_SEC;
-        sum_time = sum_time + temp_time;
-
-        // securely compute the secret shares of triangles
-        start = clock();
         T1 = T2 = 0;
+        start1 = clock();
         SecureTriangle(graph, num_user, T1, T2);
+        end1 = clock();
+        time_secure=double(end1 - start1) / CLOCKS_PER_SEC;
+        noisy_triangle = Noisy_Triangle(T1, T2, eps_tri, num_user, d_max_prime);
+        sum_noisy_triangle += noisy_triangle;
+    }
+    cout << "number of nodes: " << num_user << endl;
+    cout<<"true maximum degree: "<<d_max<<endl;
+    cout << "number of true triangles: " << true_triangle << endl;
 
-        end = clock();
-        temp_time = double(end - start) / CLOCKS_PER_SEC;
-        cout << "time of secure computation: " << temp_time << endl;
-        sum_time = sum_time + temp_time;
-        //cout<<"test: "<<T1+T2<<endl;
+    end = clock();
+    sum_time += double(end - start) / CLOCKS_PER_SEC;
+    sum_time = sum_time / num_iter;
+    
+    noisy_triangle = round(sum_noisy_triangle / num_iter);
+    cout << "noisy_triangle: " << noisy_triangle << endl;
 
-        //perturb using distributed noise
-        start = clock();
-        for (int j = 0; j < num_iter; j++) {
-            noisy_triangle = Noisy_Triangle(T1, T2, eps, num_user, d_max_prime);
-            sum_noisy_triangle += noisy_triangle;
-        }
-        end = clock();
-        temp_time = double(end - start) / CLOCKS_PER_SEC;
-        temp_time = temp_time / num_iter;
-        sum_time = sum_time + temp_time;
-
-        noisy_triangle = round(sum_noisy_triangle / num_iter);
-        cout << "noisy_triangle: " << noisy_triangle << endl;
-
-        l2loss = Compute_l2loss(true_triangle, noisy_triangle);
-        re = Compute_RE(true_triangle, noisy_triangle);
-        cout << "l2loss: " << l2loss << " " << " re: " << re << endl;
-        cout << "running time: " << sum_time << "s" << endl;
+    l2loss = Compute_l2loss(true_triangle, noisy_triangle);
+    re = Compute_RE(true_triangle, noisy_triangle);
+    cout << "l2loss: " << l2loss << " " << " re: " << re << endl;
+    cout<<"time of secure: "<<time_secure<<" s "<<endl;
+    cout << "running time: " << sum_time << "s" << endl;
     return 0;
 }
