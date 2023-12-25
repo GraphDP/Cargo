@@ -309,13 +309,17 @@ int main(int argc, char *argv[]) {
     double time_secure;
     clock_t start,end;
     clock_t start1,end1;
+
+    string filename=argv[1];
+    eps = atof(argv[2]);
+    num_iter=atoi(argv[3]);
     
-    string filename = "input_graph.txt";
+    //string filename = "input_graph.txt";
     cout << "******************" << endl;
     cout << "dataset: " << filename << endl;
     num_user = get_NodeNum(filename);
 
-    eps=3;  //privacy budget
+    //eps=3;  //privacy budget
     cout << "-------------------" << endl;
     cout << "epsilon: " << eps << endl;
     alpha = 0.1;
